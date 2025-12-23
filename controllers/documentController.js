@@ -13,6 +13,9 @@ export const getAllDocuments = async (req, res) => {
     });
 
     const accessible = docs.filter(doc => {
+      // Owners always see their own documents
+      if (doc.owner_id === req.user.id) return true;
+
       const permission = doc.permissions[0];
       return permission?.can_view ?? false;
     });
@@ -43,15 +46,43 @@ export const getDocumentById = async (req, res) => {
   }
 };
 
-// Create document (Admin only)
+// Create document (Employees/Managers/Admins can upload)
 export const createDocument = async (req, res) => {
-  if (!req.user.roles.includes('Admin')) {
-    return res.status(403).json({ message: 'Only Admin can create documents' });
-  }
-
   try {
-    const { title, file_path } = req.body;
-    const doc = await Document.create({ title, file_path });
+    const file = req.file;
+    const { title, shared_with } = req.body;
+
+    if (!file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Create document owned by current user
+    const doc = await Document.create({
+      title: title || file.originalname,
+      file_path: file.path,
+      owner_id: req.user.id
+    });
+
+    // Optional: initial sharing permissions (comma-separated user IDs)
+    if (shared_with) {
+      const ids = String(shared_with)
+        .split(',')
+        .map((id) => parseInt(id.trim(), 10))
+        .filter((id) => !Number.isNaN(id));
+
+      await Promise.all(
+        ids.map((uid) =>
+          DocumentPermission.create({
+            resource_id: doc.id,
+            user_id: uid,
+            can_view: true,
+            can_edit: false,
+            granted_by: req.user.id
+          })
+        )
+      );
+    }
+
     res.status(201).json(doc);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -79,20 +110,25 @@ export const updateDocument = async (req, res) => {
   }
 };
 
-// Delete department (Admin only)
-export const deleteDepartment = async (req, res) => {
+// Delete document (Admin or owner)
+export const deleteDocument = async (req, res) => {
   try {
-    const department = await Department.findByPk(req.params.id);
-    if (!department) return res.status(404).json({ message: 'Department not found' });
+    const doc = await Document.findByPk(req.params.id);
+    if (!doc) return res.status(404).json({ message: 'Document not found' });
 
-    // Check if any employees are in this department
-    const employees = await EmployeeProfile.findAll({ where: { department_id: department.id } });
-    if (employees.length > 0) {
-      return res.status(400).json({ message: 'Cannot delete department with employees assigned' });
+    // Only admins or the owner can delete
+    const isAdmin = req.user.roles.includes('Admin');
+    const isOwner = doc.owner_id === req.user.id;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ message: 'Only the owner or an Admin can delete this document' });
     }
 
-    await department.destroy();
-    res.json({ message: 'Department deleted successfully' });
+    // Clean up any permissions for this document
+    await DocumentPermission.destroy({ where: { resource_id: doc.id } });
+
+    await doc.destroy();
+    res.json({ message: 'Document deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import {
   getAllDocuments,
   getDocumentById,
@@ -13,6 +14,9 @@ import { authorizeRoles } from '../middleware/roleMiddleware.js';
 import { activityLogger } from '../middleware/activityLogger.js'; // updated
 
 const router = express.Router();
+
+// Simple disk storage for uploads
+const upload = multer({ dest: 'uploads/' });
 
 /**
  * Get all documents
@@ -47,16 +51,14 @@ router.get(
 );
 
 /**
- * Create document
- * RBAC: Admin only
- * ABAC: optional rules
+ * Create document (employees can upload their own documents)
  * Activity logging
  */
 router.post(
   '/',
   authenticate,
-  authorizeRoles('Admin'),
-  enforceABAC('Document', 'create'),
+  authorizeRoles('Employee', 'Manager', 'Admin'),
+  upload.single('file'),
   activityLogger('createDocument', 'Document'),
   createDocument
 );
@@ -80,15 +82,13 @@ router.put(
 
 /**
  * Delete document
- * RBAC: Admin only
- * DAC: optional check
- * ABAC: optional
+ * RBAC: Employee, Manager, Admin (controller & DAC/ABAC enforce finer rules)
  * Activity logging
  */
 router.delete(
   '/:id',
   authenticate,
-  authorizeRoles('Admin'),
+  authorizeRoles('Employee', 'Manager', 'Admin'),
   enforceDAC('delete'),
   enforceABAC('Document', 'delete'),
   activityLogger('deleteDocument', 'Document'),

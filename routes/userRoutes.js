@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getAllUsers,
   getUserById,
+  getShareTargets,
   createUser,
   updateUser,
   deleteUser,
@@ -17,7 +18,7 @@ import { enforceRules } from '../middleware/ruleMiddleware.js';
 const router = express.Router();
 
 /**
- * Get all users
+ * Get all users (Admin only)
  */
 router.get(
   '/',
@@ -28,6 +29,17 @@ router.get(
   enforceRules('getAllUsers'), // dynamic rules: e.g., department visibility
   activityLogger('getAllUsers', 'User'),
   getAllUsers
+);
+
+/**
+ * Get shareable user targets for documents (basic list)
+ */
+router.get(
+  '/share-targets',
+  authenticate,
+  authorizeRoles('Employee', 'Manager', 'Admin'),
+  activityLogger('getShareTargets', 'User'),
+  getShareTargets
 );
 
 /**

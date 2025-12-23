@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getAllProfiles,
   getProfileById,
+  getCurrentUserProfile,
   createProfile,
   updateProfile,
   deleteProfile,
@@ -16,23 +17,28 @@ import { activityLogger } from '../middleware/activityLogger.js'; // updated
 const router = express.Router();
 
 /**
- * Get all employee profiles
- * RBAC: Admin only
- * Activity logging: logs access
+ * Get current user's employee profile
+ */
+router.get(
+  '/me',
+  authenticate,
+  activityLogger('viewOwnProfile', 'EmployeeProfile'),
+  getCurrentUserProfile
+);
+
+/**
+ * Get employee profile by profile ID
  */
 router.get(
   '/:id',
   authenticate,
-  //authorizeRoles('Employee', 'Manager', 'Admin'),
-  //enforceMAC('view'),
-  //enforceABAC('EmployeeProfile', 'view'),
   activityLogger('viewProfile', 'EmployeeProfile'),
   getProfileById
 );
+
 router.get(
   '/',
   authenticate,
- // authorizeRoles('Admin', 'Manager', 'Employee'),
   activityLogger('viewAllProfiles', 'EmployeeProfile'),
   getAllProfiles
 );

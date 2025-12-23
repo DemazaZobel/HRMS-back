@@ -35,8 +35,18 @@ export const enforceABAC = (resourceType, action) => {
           break;
 
         case 'Document':
+          // For collection routes (no specific :id), skip ABAC resource lookup
+          if (!id) {
+            return next();
+          }
           resource = await Document.findByPk(id);
           if (!resource) return deny(res, middlewareName, 'Document not found', 404);
+
+          // Owners can always manage their own documents regardless of sensitivity
+          if (resource.owner_id === user.id) {
+            console.log(`[${middlewareName}] Owner access granted for document ${id}`);
+            return next();
+          }
           break;
 
         case 'User':

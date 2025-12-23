@@ -9,6 +9,7 @@ import userRoutes from './routes/userRoutes.js';
 import departmentRoutes from './routes/departmentRoutes.js';
 import profileRoutes from './routes/employeeProfileRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
 import { authenticate } from './middleware/authMiddleware.js';
 import { activityLogger } from './middleware/activityLogger.js';
 import roleRoute from './routes/roleRoutes.js';
@@ -27,13 +28,13 @@ app.use(express.json());
 app.use('/auth', authRoutes);
 
 // Protected routes
-app.use('/users',  userRoutes);
+app.use('/users', userRoutes);
 app.use('/departments', departmentRoutes);
-app.use('/profiles',  profileRoutes);
+app.use('/profiles', profileRoutes);
 app.use('/activities', activityRoutes);
-app.use('/roles',  roleRoute);
+app.use('/documents', documentRoutes);
+app.use('/roles', roleRoute);
 app.use('/employee-profiles', employeeProfileRoute);
-
 app.use('/role-requests', roleRequestRoutes);
 
 // Root

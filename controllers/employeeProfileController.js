@@ -24,7 +24,7 @@ export const getAllProfiles = async (req, res) => {
   }
 };
 
-// ------------------ GET PROFILE BY ID ------------------
+// ------------------ GET PROFILE BY PROFILE ID ------------------
 export const getProfileById = async (req, res) => {
   try {
     const profile = await EmployeeProfile.findByPk(req.params.id, {
@@ -55,6 +55,31 @@ export const getProfileById = async (req, res) => {
         return res.status(403).json({ message: 'Access denied' });
       }
     }
+
+    res.json(profile);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ------------------ GET CURRENT USER PROFILE (BY USER ID) ------------------
+export const getCurrentUserProfile = async (req, res) => {
+  try {
+    const profile = await EmployeeProfile.findOne({
+      where: { user_id: req.user.id },
+      include: [
+        { model: User, as: 'profileUser', attributes: ['id', 'username', 'email', 'sensitivityLevel'] },
+        { model: Department, as: 'profileDepartment', attributes: ['id', 'name'] },
+        { model: User, as: 'profileManager', attributes: ['id', 'username'] },
+      ],
+    });
+
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found for current user' });
+    }
+
+    // For viewing own profile, allow access regardless of MAC sensitivity comparison
+    // (user is always allowed to see their own profile details)
 
     res.json(profile);
   } catch (err) {

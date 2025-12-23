@@ -36,7 +36,7 @@ export const enforceDAC = (action) => {
       if (!permission) return deny(res, middlewareName, 'No permissions assigned for this user');
 
       if (action === 'view' && permission.can_view) return next();
-      if (action === 'edit' && permission.can_edit) return next();
+      if ((action === 'edit' || action === 'delete') && permission.can_edit) return next();
 
       return deny(res, middlewareName, `User does not have ${action} permission for this document`);
     } catch (err) {

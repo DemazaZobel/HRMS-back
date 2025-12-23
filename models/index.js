@@ -54,6 +54,10 @@ SecurityLabel.hasMany(Document, { foreignKey: 'security_label', as: 'documents' 
 Document.belongsToMany(User, { through: DocumentPermission, foreignKey: 'resource_id', as: 'usersWithAccess' });
 User.belongsToMany(Document, { through: DocumentPermission, foreignKey: 'user_id', as: 'documentsAccessible' });
 
+// Direct association for permissions include on Document
+Document.hasMany(DocumentPermission, { foreignKey: 'resource_id', as: 'permissions' });
+DocumentPermission.belongsTo(Document, { foreignKey: 'resource_id', as: 'document' });
+
 // ----- Leave Requests -----
 LeaveRequest.belongsTo(EmployeeProfile, { foreignKey: 'employee_id', as: 'leaveEmployee' });
 EmployeeProfile.hasMany(LeaveRequest, { foreignKey: 'employee_id', as: 'employeeLeaveRequests' });
