@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import {
   getAllDocuments,
+  getPublicDocuments,
   getDocumentById,
   createDocument,
   updateDocument,
@@ -19,16 +20,22 @@ const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
 /**
- * Get all documents
+ * Get public documents (no auth required)
+ */
+router.get(
+  '/public',
+  getPublicDocuments
+);
+
+/**
+ * Get all documents (authenticated users)
  * RBAC: Employee, Manager, Admin
- * ABAC: attribute filters
- * Activity logging: records user, IP, agent, action, module
+ * MAC/DAC: enforced in controller
  */
 router.get(
   '/',
   authenticate,
   authorizeRoles('Employee', 'Manager', 'Admin'),
-  enforceABAC('Document', 'view'),
   activityLogger('viewAllDocuments', 'Document'),
   getAllDocuments
 );
@@ -64,18 +71,12 @@ router.post(
 );
 
 /**
- * Update document
- * RBAC: Admin only
- * DAC: check edit permission
- * ABAC: optional
- * Activity logging
+ * Update document visibility (DAC: only owner can change)
  */
 router.put(
   '/:id',
   authenticate,
-  authorizeRoles('Admin'),
-  enforceDAC('edit'),
-  enforceABAC('Document', 'update'),
+  authorizeRoles('Employee', 'Manager', 'Admin'),
   activityLogger('updateDocument', 'Document'),
   updateDocument
 );
